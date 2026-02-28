@@ -42,12 +42,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: '1.5.8'
-          terraform_wrapper: false
-          cli_config_credentials_hostname: ''
+      - name: Install Terraform (manual)
+        run: |
+          TF_VERSION="1.5.8"
+          echo "Installing Terraform ${TF_VERSION}"
+          wget -q https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
+          unzip -q terraform_${TF_VERSION}_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
       - name: Terraform Init
         run: |
           cd infra/terraform/aws
