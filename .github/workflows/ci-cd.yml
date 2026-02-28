@@ -53,13 +53,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y terraform
           terraform -version
-      - name: Terraform (PR-safe init & plan)
+      - name: Terraform (PR-safe init & validate)
         if: github.event_name == 'pull_request'
         run: |
           cd infra/terraform/aws
           terraform init -backend=false
           terraform validate
-          terraform plan -refresh=false -input=false
+          echo "Skipping 'terraform plan' for pull requests because provider credentials are not available in forks/PRs."
       - name: Terraform (full init & plan)
         if: github.event_name != 'pull_request'
         env:
