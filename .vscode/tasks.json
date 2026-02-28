@@ -1,0 +1,39 @@
+{
+    // See https://go.microsoft.com/fwlink/?linkid=830387
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Install Python deps",
+            "type": "shell",
+            "command": "python -m pip install -r services/python_app/requirements.txt",
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Node deps",
+            "type": "shell",
+            "command": "cd services/node_app; npm install",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Python app",
+            "type": "shell",
+            "command": "python services/python_app/app.py",
+            "problemMatcher": [],
+            "isBackground": true
+        },
+        {
+            "label": "Run Node app",
+            "type": "shell",
+            "command": "cd services/node_app; npm run dev",
+            "problemMatcher": [],
+            "isBackground": true
+        },
+        {
+            "label": "Terraform: plan (AWS)",
+            "type": "shell",
+            "command": "cd infra/terraform/aws && terraform init && terraform plan",
+            "problemMatcher": []
+        }
+    ]
+}
