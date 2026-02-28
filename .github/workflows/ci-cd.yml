@@ -59,7 +59,24 @@ jobs:
           cd infra/terraform/aws
           terraform init -backend=false
           terraform validate
-          echo "Skipping 'terraform plan' for pull requests because provider credentials are not available in forks/PRs."
+      - name: Terraform (run plan and save output for PRs when creds available)
+        if: github.event_name == 'pull_request' && secrets.AWS_ACCESS_KEY_ID != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          cd infra/terraform/aws
+          terraform plan -no-color -input=false -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+      - name: Comment PR with Terraform plan
+        if: github.event_name == 'pull_request' && secrets.AWS_ACCESS_KEY_ID != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: infra/terraform/aws/plan.txt
+          title: "Terraform plan for PR #${{ github.event.pull_request.number }}"
       - name: Terraform (full init & plan)
         if: github.event_name != 'pull_request'
         env:
