@@ -23,12 +23,18 @@ variable "db_name" {
   default = "exampledb"
 }
 
+variable "db_identifier" {
+  type    = string
+  default = "example-db-instance"
+}
+
 variable "db_username" {
   type    = string
   default = "exampleuser"
 }
 
 variable "db_password" {
-  type    = string
-  default = "changeme"
+  type      = string
+  default   = "changeme"
+  sensitive = true
 }

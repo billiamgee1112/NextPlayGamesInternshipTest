@@ -30,7 +30,7 @@ resource "aws_db_instance" "postgres" {
   allocated_storage    = 20
   engine               = "postgres"
   instance_class       = var.db_instance_class
-  name                 = var.db_name
+  identifier           = var.db_identifier
   username             = var.db_username
   password             = var.db_password
   db_subnet_group_name = aws_db_subnet_group.default.name
