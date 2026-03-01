@@ -1,3 +1,4 @@
+---
 name: CI/CD
 
 permissions:
@@ -6,9 +7,9 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -58,7 +59,8 @@ jobs:
           context: services/python_app
           file: services/python_app/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/nextplaygames-python:${{ github.sha }}
+          tags:
+            - ghcr.io/${{ github.repository_owner }}/nextplaygames-python:${{ github.sha }}
 
       - name: Build and push Node image
         uses: docker/build-push-action@v4
@@ -66,7 +68,8 @@ jobs:
           context: services/node_app
           file: services/node_app/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/nextplaygames-node:${{ github.sha }}
+          tags:
+            - ghcr.io/${{ github.repository_owner }}/nextplaygames-node:${{ github.sha }}
 
       - name: Set outputs for downstream jobs
         id: set_outputs
