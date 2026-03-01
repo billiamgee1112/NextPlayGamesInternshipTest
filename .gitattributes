@@ -1,0 +1,4 @@
+# Ensure GitHub workflow YAML files use LF line endings
+.github/workflows/* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
