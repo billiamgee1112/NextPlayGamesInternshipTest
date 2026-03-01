@@ -1,0 +1,81 @@
+﻿{
+    "total_count":  1,
+    "jobs":  [
+                 {
+                     "id":  65272286635,
+                     "run_id":  22531842096,
+                     "workflow_name":  "Workflow Lint",
+                     "head_branch":  "ci-test",
+                     "run_url":  "https://api.github.com/repos/billiamgee1112/NextPlayGamesInternshipTest/actions/runs/22531842096",
+                     "run_attempt":  1,
+                     "node_id":  "CR_kwDORbYMTc8AAAAPMogNqw",
+                     "head_sha":  "ff79a5f889ecc70cc037cc5e1a7d8ce56c037b92",
+                     "url":  "https://api.github.com/repos/billiamgee1112/NextPlayGamesInternshipTest/actions/jobs/65272286635",
+                     "html_url":  "https://github.com/billiamgee1112/NextPlayGamesInternshipTest/actions/runs/22531842096/job/65272286635",
+                     "status":  "completed",
+                     "conclusion":  "failure",
+                     "created_at":  "2026-03-01T00:00:53Z",
+                     "started_at":  "2026-03-01T00:00:55Z",
+                     "completed_at":  "2026-03-01T00:02:20Z",
+                     "name":  "super-linter",
+                     "steps":  [
+                                   {
+                                       "name":  "Set up job",
+                                       "status":  "completed",
+                                       "conclusion":  "success",
+                                       "number":  1,
+                                       "started_at":  "2026-03-01T00:00:55Z",
+                                       "completed_at":  "2026-03-01T00:00:56Z"
+                                   },
+                                   {
+                                       "name":  "Pull ghcr.io/github/super-linter:v4.10.0",
+                                       "status":  "completed",
+                                       "conclusion":  "success",
+                                       "number":  2,
+                                       "started_at":  "2026-03-01T00:00:56Z",
+                                       "completed_at":  "2026-03-01T00:02:16Z"
+                                   },
+                                   {
+                                       "name":  "Run actions/checkout@v4",
+                                       "status":  "completed",
+                                       "conclusion":  "success",
+                                       "number":  3,
+                                       "started_at":  "2026-03-01T00:02:16Z",
+                                       "completed_at":  "2026-03-01T00:02:17Z"
+                                   },
+                                   {
+                                       "name":  "Lint GitHub Actions workflows",
+                                       "status":  "completed",
+                                       "conclusion":  "failure",
+                                       "number":  4,
+                                       "started_at":  "2026-03-01T00:02:17Z",
+                                       "completed_at":  "2026-03-01T00:02:18Z"
+                                   },
+                                   {
+                                       "name":  "Post Run actions/checkout@v4",
+                                       "status":  "completed",
+                                       "conclusion":  "success",
+                                       "number":  8,
+                                       "started_at":  "2026-03-01T00:02:18Z",
+                                       "completed_at":  "2026-03-01T00:02:18Z"
+                                   },
+                                   {
+                                       "name":  "Complete job",
+                                       "status":  "completed",
+                                       "conclusion":  "success",
+                                       "number":  9,
+                                       "started_at":  "2026-03-01T00:02:18Z",
+                                       "completed_at":  "2026-03-01T00:02:18Z"
+                                   }
+                               ],
+                     "check_run_url":  "https://api.github.com/repos/billiamgee1112/NextPlayGamesInternshipTest/check-runs/65272286635",
+                     "labels":  [
+                                    "ubuntu-latest"
+                                ],
+                     "runner_id":  1000000032,
+                     "runner_name":  "GitHub Actions 1000000032",
+                     "runner_group_id":  0,
+                     "runner_group_name":  "GitHub Actions"
+                 }
+             ]
+}

@@ -1,14 +1,22 @@
 name: CI/CD
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # expose image URIs as outputs for downstream jobs
+    outputs:
+      python_image: ${{ steps.set_outputs.outputs.py_image }}
+      node_image: ${{ steps.set_outputs.outputs.node_image }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -26,22 +34,99 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - name: Install Node deps
-        run: cd services/node_app; npm ci
-      - name: Run Node tests
-        run: cd services/node_app; npm test
+          node-version: '20'
+      - name: Install Node deps, start server, and run tests
+        run: |
+          cd services/node_app
+          npm ci
+          # start the dev server in the background
+          npm run dev &
+          # wait for the server to be available, then run tests
+          npx wait-on http://localhost:3000
+          npm test
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Python image
+        uses: docker/build-push-action@v4
+        with:
+          context: services/python_app
+          file: services/python_app/Dockerfile
+          push: true
+          tags:
+            - "ghcr.io/${{ github.repository_owner }}/nextplaygames-python:${{ github.sha }}"
+
+      - name: Build and push Node image
+        uses: docker/build-push-action@v4
+        with:
+          context: services/node_app
+          file: services/node_app/Dockerfile
+          push: true
+          tags:
+            - "ghcr.io/${{ github.repository_owner }}/nextplaygames-node:${{ github.sha }}"
+
+      - name: Set outputs for downstream jobs
+        id: set_outputs
+        run: |
+          echo "py_image=ghcr.io/${{ github.repository_owner }}/nextplaygames-python:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "node_image=ghcr.io/${{ github.repository_owner }}/nextplaygames-node:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   terraform:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Terraform Init
+      - name: Install Terraform (apt)
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y gnupg software-properties-common curl lsb-release
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          DIST=$(lsb_release -cs)
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com ${DIST} main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update
+          sudo apt-get install -y terraform
+          terraform -version
+      - name: Terraform (PR-safe init & validate)
+        if: github.event_name == 'pull_request'
+        run: |
+          cd infra/terraform/aws
+          terraform init -backend=false
+          terraform validate
+      - name: Terraform (run plan and save output for PRs when creds available)
+        if: github.event_name == 'pull_request' && secrets.AWS_ACCESS_KEY_ID != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          PY_IMAGE: ${{ needs.build.outputs.python_image }}
+          NODE_IMAGE: ${{ needs.build.outputs.node_image }}
+        run: |
+          cd infra/terraform/aws
+          terraform plan -no-color -input=false -out=tfplan -var "python_image=${PY_IMAGE}" -var "node_image=${NODE_IMAGE}"
+          terraform show -no-color tfplan > plan.txt
+      - name: Comment PR with Terraform plan
+        if: github.event_name == 'pull_request' && secrets.AWS_ACCESS_KEY_ID != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: infra/terraform/aws/plan.txt
+          title: "Terraform plan for PR #${{ github.event.pull_request.number }}"
+      - name: Terraform (full init & plan)
+        if: github.event_name != 'pull_request'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          PY_IMAGE: ${{ needs.build.outputs.python_image }}
+          NODE_IMAGE: ${{ needs.build.outputs.node_image }}
         run: |
           cd infra/terraform/aws
           terraform init
-      - name: Terraform Plan
-        run: |
-          cd infra/terraform/aws
-          terraform plan
+          terraform plan -input=false -var "python_image=${PY_IMAGE}" -var "node_image=${NODE_IMAGE}"
