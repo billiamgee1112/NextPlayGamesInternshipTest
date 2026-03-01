@@ -16,6 +16,4 @@ jobs:
         env:
           VALIDATE_WORKFLOWS: true
           VALIDATE_YAML: true
-          VALIDATE_MARKDOWN: false
-          VALIDATE_TERRAFORM: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
