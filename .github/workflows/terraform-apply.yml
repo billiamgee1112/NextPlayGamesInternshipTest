@@ -1,0 +1,70 @@
+name: Terraform Apply (protected)
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_image:
+        description: 'Python service image URI'
+        required: false
+        default: ''
+      node_image:
+        description: 'Node service image URI'
+        required: false
+        default: ''
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Terraform (apt)
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y gnupg software-properties-common curl lsb-release
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          DIST=$(lsb_release -cs)
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com ${DIST} main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update
+          sudo apt-get install -y terraform
+      - name: Terraform apply
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          PY_IMAGE: ${{ github.event.inputs.python_image }}
+          NODE_IMAGE: ${{ github.event.inputs.node_image }}
+        run: |
+          cd infra/terraform/aws
+          terraform init
+          terraform plan -out=tfplan -input=false -var "python_image=${PY_IMAGE}" -var "node_image=${NODE_IMAGE}"
+          terraform apply -input=false tfplan
+
+      - name: Smoke test ALB (post-apply)
+        run: |
+          set -eux
+          cd infra/terraform/aws
+          # attempt to read ALB DNS from terraform outputs
+          ALB=$(terraform output -raw alb_dns_name 2>/dev/null || true)
+          if [ -z "$ALB" ]; then
+            echo "No ALB DNS output found; skipping smoke test."
+            exit 0
+          fi
+
+          echo "Found ALB: $ALB — performing HTTP check (up to 2 minutes)..."
+          SUCCESS=0
+          for i in $(seq 1 12); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$ALB/ || true)
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              SUCCESS=1
+              echo "Smoke test passed (HTTP $HTTP_CODE)"
+              break
+            fi
+            sleep 10
+          done
+          if [ "$SUCCESS" -ne 1 ]; then
+            echo "Smoke test failed — ALB did not return 2xx/3xx within timeout"
+            exit 1
+          fi

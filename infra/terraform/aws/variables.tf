@@ -13,6 +13,11 @@ variable "private_subnet_ids" {
   default = []
 }
 
+variable "public_subnet_ids" {
+  type    = list(string)
+  default = []
+}
+
 variable "db_instance_class" {
   type    = string
   default = "db.t3.micro"
@@ -37,4 +42,32 @@ variable "db_password" {
   type      = string
   default   = "changeme"
   sensitive = true
+}
+
+// Image URIs provided by CI (empty by default for PR-safe validation)
+variable "python_image" {
+  type        = string
+  description = "Container image URI for the Python service (passed from CI)."
+  default     = ""
+}
+
+variable "node_image" {
+  type        = string
+  description = "Container image URI for the Node service (passed from CI)."
+  default     = ""
+}
+
+variable "python_container_port" {
+  type    = number
+  default = 3000
+}
+
+variable "node_container_port" {
+  type    = number
+  default = 3000
+}
+
+variable "desired_count" {
+  type    = number
+  default = 1
 }
